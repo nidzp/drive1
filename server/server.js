@@ -1,4 +1,3 @@
-
 import express from "express";
 import path from "path";
 import fs from "fs";
@@ -29,19 +28,17 @@ const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("he
 const PIN_HASH = process.env.PIN_HASH || "";
 const PIN_PEPPER = process.env.PIN_PEPPER || "";
 const STORAGE_PATH = path.resolve(__dirname, process.env.STORAGE_PATH || "../storage");
-const STORAGE_QUOTA_BYTES = Number(process.env.STORAGE_QUOTA_BYTES || 161061273600); // 150 GiB
+// PATCH: default 200 GiB quota (was 150 GiB)
+const STORAGE_QUOTA_BYTES = Number(process.env.STORAGE_QUOTA_BYTES || 214_748_364_800);
 
-// Ensure storage folder exists
 fs.mkdirSync(STORAGE_PATH, { recursive: true });
 
-// Resolve and guard paths
 function guardJoin(root, rel = "") {
   const p = path.resolve(root, rel.replace(/^[\\/]+/, ""));
   if (!p.startsWith(root)) throw new Error("Path traversal detected");
   return p;
 }
 
-// Compute initial usage
 async function computeDirSize(dir) {
   let total = 0;
   const entries = await fs.promises.readdir(dir, { withFileTypes: true });
@@ -59,7 +56,6 @@ async function computeDirSize(dir) {
 let usedBytes = 0;
 computeDirSize(STORAGE_PATH).then(v => usedBytes = v).catch(() => {});
 
-// Auth helpers
 function sha256(s) {
   return crypto.createHash("sha256").update(s).digest("hex");
 }
@@ -81,7 +77,6 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// Rate limits
 const loginLimiter = rateLimit({ windowMs: 60_000, max: 10 });
 const apiLimiter = rateLimit({ windowMs: 15 * 60_000, max: 1000 });
 
@@ -144,7 +139,6 @@ app.post("/api/mkdir", async (req, res) => {
   }
 });
 
-// Multer to temp dir
 const upload = multer({ dest: path.join(__dirname, "tmp") });
 
 // Upload
@@ -268,7 +262,6 @@ app.post("/api/rename", async (req, res) => {
   }
 });
 
-// Delete (files or folders)
 async function deleteRecursive(p) {
   const st = await fs.promises.stat(p);
   if (st.isDirectory()) {
@@ -281,6 +274,7 @@ async function deleteRecursive(p) {
   return st.size || 0;
 }
 
+// Delete (files or folders)
 app.post("/api/delete", async (req, res) => {
   const { paths } = req.body || {};
   if (!Array.isArray(paths) || paths.length === 0) return res.status(400).json({ error: "No paths" });
@@ -329,7 +323,6 @@ app.post("/api/move", async (req, res) => {
   }
 });
 
-// Serve client
 const distPath = path.resolve(__dirname, "../client/dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));

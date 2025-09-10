@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { api } from "./api";
 import Login from "./components/Login.jsx";
@@ -23,6 +22,23 @@ export default function App() {
   const [quota, setQuota] = useState({ usedBytes: 0, quotaBytes: 0 });
   const [preview, setPreview] = useState(null);
   const [err, setErr] = useState("");
+  const [sort, setSort] = useState({ by: "name", dir: 1 }); // 1 asc, -1 desc
+
+  const sortItems = (arr) => {
+    const { by, dir } = sort;
+    const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+    const cmp = (a,b) => {
+      // Directories first
+      if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+      let res = 0;
+      if (by === "name") res = collator.compare(a.name, b.name);
+      else if (by === "size") res = (a.size||0) - (b.size||0);
+      else if (by === "mtime") res = a.mtime - b.mtime;
+      else if (by === "ext") res = (a.ext||"").localeCompare(b.ext||"");
+      return res * dir;
+    };
+    return [...arr].sort(cmp);
+  };
 
   const refresh = async (p = path) => {
     setErr("");
@@ -31,7 +47,7 @@ export default function App() {
       setQuota({ usedBytes: me.usedBytes, quotaBytes: me.quotaBytes });
       const data = await api.list(p);
       setPath(data.path || "");
-      setItems(data.items || []);
+      setItems(sortItems(data.items || []));
       setSelected(new Set());
       setPreview(null);
     } catch (e) {
@@ -42,7 +58,14 @@ export default function App() {
 
   useEffect(() => {
     api.me().then(() => { setAuthed(true); refresh(""); }).catch(()=>{});
+    // eslint-disable-next-line
   }, []);
+
+  useEffect(() => {
+    // re-sort when sort changes
+    setItems(prev => sortItems(prev));
+    // eslint-disable-next-line
+  }, [sort]);
 
   if (!authed) return <Login onLoggedIn={() => { setAuthed(true); refresh(""); }} />;
 
@@ -50,9 +73,7 @@ export default function App() {
 
   const onOpen = (it) => {
     if (it.isDir) onNavigate((path ? path + "/" : "") + it.name);
-    else {
-      setPreview({ ...it, rel: (path ? path + "/" : "") + it.name });
-    }
+    else setPreview({ ...it, rel: (path ? path + "/" : "") + it.name });
   };
 
   const toggleSel = (idx) => {
@@ -65,12 +86,8 @@ export default function App() {
 
   const onUpload = async (files) => {
     if (!files || files.length === 0) return;
-    try {
-      await api.upload(path, files);
-      refresh();
-    } catch (e) {
-      alert(e.error || "Greška pri uploadu");
-    }
+    try { await api.upload(path, files); refresh(); } 
+    catch (e) { alert(e.error || "Greška pri uploadu"); }
   };
 
   const onMkdir = async () => {
@@ -111,6 +128,12 @@ export default function App() {
 
   const TEXT_EXTS = ["txt","md","csv","json","log","xml","yml","yaml","js","ts","py","java","c","cpp","cs","html","css"];
 
+  const setSortBy = (by) => {
+    setSort(s => ({ by, dir: s.by === by ? -s.dir : 1 }));
+  };
+
+  const usedPct = quota.quotaBytes ? Math.min(100, Math.round((quota.usedBytes / quota.quotaBytes) * 100)) : 0;
+
   return (
     <div className="win7-desktop">
       <div className="win7-window">
@@ -127,14 +150,24 @@ export default function App() {
             onZip={onZip}
           />
           <div className="split">
-            <div className="pane left" onDragOver={(e)=>e.preventDefault()} onDrop={(e)=>{ e.preventDefault(); onUpload(e.dataTransfer.files); }}>
+            <div
+              className="pane left"
+              onDragOver={(e)=>e.preventDefault()}
+              onDrop={(e)=>{ e.preventDefault(); onUpload(e.dataTransfer.files); }}
+              >
               <table className="filetable">
                 <thead>
-                  <tr><th></th><th>Naziv</th><th>Veličina</th><th>Izmenjeno</th></tr>
+                  <tr>
+                    <th></th>
+                    <th className="sortable" onClick={()=>setSortBy("name")}>Naziv <span className="dir">{sort.by==="name"?(sort.dir>0?"▲":"▼"):""}</span></th>
+                    <th className="sortable" onClick={()=>setSortBy("size")}>Veličina <span className="dir">{sort.by==="size"?(sort.dir>0?"▲":"▼"):""}</span></th>
+                    <th className="sortable" onClick={()=>setSortBy("mtime")}>Izmenjeno <span className="dir">{sort.by==="mtime"?(sort.dir>0?"▲":"▼"):""}</span></th>
+                  </tr>
                 </thead>
                 <tbody>
                   {items.map((it, i) => (
-                    <tr key={i} className={selected.has(i) ? "sel" : ""} onClick={() => toggleSel(i)} onDoubleClick={() => onOpen(it)}>
+                    <tr key={i} className={selected.has(i) ? "sel" : ""}
+                        onClick={() => toggleSel(i)} onDoubleClick={() => onOpen(it)}>
                       <td className="iconcell"><Icon ext={it.ext} isDir={it.isDir} /></td>
                       <td>{it.name}</td>
                       <td>{it.isDir ? "" : fmtSize(it.size)}</td>
@@ -144,10 +177,14 @@ export default function App() {
                 </tbody>
               </table>
               {err && <div className="error">{err}</div>}
+              <div style={{marginTop:8, color:"#666"}}>
+                Izabrano: <b>{selected.size}</b>
+              </div>
             </div>
             <div className="pane right">
               <div className="quota">
-                Korišćeno: <b>{fmtSize(quota.usedBytes)}</b> / {fmtSize(quota.quotaBytes)}
+                Korišćeno: <b>{fmtSize(quota.usedBytes)}</b> / {fmtSize(quota.quotaBytes)} ({usedPct}%)
+                <div className="quota-bar"><div className="quota-fill" style={{width: usedPct + "%"}}/></div>
               </div>
               {!preview && <div className="placeholder">Odaberi fajl za pregled</div>}
               {preview && (

@@ -1,1 +1,2 @@
-google http://localhost:8080/ pin: 1006 150gb
+http://192.168.0.32:8080
+ pin: 1006  
