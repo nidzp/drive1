@@ -1,0 +1,84 @@
+
+:root {
+  --win7-blue-start: #4a88d8;
+  --win7-blue-end: #1c5fb3;
+  --win7-border: #2f5597;
+  --win7-bg: #e8eef7;
+  --win7-surface: #ffffff;
+  --win7-shadow: rgba(0,0,0,0.2);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width=\"20\" height=\"20\"><rect width=\"20\" height=\"20\" fill=\"%23e8eef7\"/></svg>') repeat; font-family: Segoe UI, Tahoma, Arial, sans-serif; }
+
+.win7-desktop { padding: 20px; }
+
+.win7-window {
+  background: var(--win7-surface);
+  border: 1px solid var(--win7-border);
+  border-radius: 6px;
+  box-shadow: 0 10px 20px var(--win7-shadow);
+  overflow: hidden;
+}
+
+.titlebar {
+  color: #fff;
+  padding: 8px 12px;
+  font-weight: 600;
+  background: linear-gradient(to bottom, var(--win7-blue-start), var(--win7-blue-end));
+  border-bottom: 1px solid var(--win7-border);
+}
+
+.content { padding: 10px; background: var(--win7-bg); }
+
+.win7-toolbar {
+  background: #f0f6ff;
+  border: 1px solid #cfe0ff;
+  border-radius: 4px;
+  padding: 6px;
+  margin: 8px 0;
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+
+.win7-toolbar button {
+  border: 1px solid #8aa8d8;
+  background: linear-gradient(#ffffff, #e5eefc);
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.win7-toolbar button:hover {
+  background: linear-gradient(#ffffff, #dce8fb);
+}
+
+.breadcrumbs { margin-bottom: 6px; }
+.breadcrumbs a { color: #1c5fb3; cursor: pointer; }
+
+.split { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+
+.pane {
+  background: #fff;
+  border: 1px solid #b7c8e6;
+  border-radius: 4px;
+  padding: 8px;
+  min-height: 60vh;
+}
+
+.filetable { width: 100%; border-collapse: collapse; }
+.filetable th, .filetable td { border-bottom: 1px solid #eef2fb; padding: 6px; }
+.filetable tr:hover { background: #f7fbff; }
+.filetable tr.sel { background: #e0eefc; }
+.iconcell { width: 32px; }
+
+.icon { font-size: 18px; }
+
+.quota { margin-bottom: 8px; }
+
+.preview img { max-width: 100%; border: 1px solid #ccc; }
+.placeholder { color: #777; padding: 10px; }
+
+.login-window { max-width: 360px; margin: 10% auto; }
+.login-window .content { padding: 16px; }
+.login-window input { width: 100%; padding: 8px; margin: 8px 0; }
+.login-window button { width: 100%; padding: 8px; }
+.error { color: #b00020; margin-top: 8px; }
