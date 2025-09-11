@@ -1,0 +1,19 @@
+
+# Node
+node_modules/
+npm-debug.log*
+pnpm-lock.yaml
+yarn.lock
+
+# Env
+.env
+server/.env
+client/.env
+
+# Build
+client/dist/
+*.zip
+
+# Storage
+storage/**
+!storage/.gitkeep
